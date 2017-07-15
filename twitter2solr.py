@@ -21,21 +21,22 @@ def transform_json(line):
     return json.dumps(solr_dist)
 
 
-def read (file, config):
+def upload (file, solr_host, solr_core, bulk_size):
     with open(file) as f:
         payload = list()
         for line in f:
             if len(line.strip()) > 0:
                 payload.append(transform_json(line))
-            if len(payload) == config['bulk_size']:
-                sendRequestsBulkToSolr(config, payload)
+            if len(payload) == bulk_size:
+                sendRequestsBulkToSolr(solr_host, solr_core, payload)
                 payload = list()
         if len(payload)> 0:
-            sendRequestsBulkToSolr(config, payload)
+            sendRequestsBulkToSolr(solr_host, solr_core, payload)
 
 
-def sendRequestsBulkToSolr(config, payload):
-    solr_url = config['solr_host'] + '/solr/' + config['core'] + '/update/json?commit=true'
+def sendRequestsBulkToSolr(solr_host, solr_core, payload):
+    solr_url = solr_host + '/solr/' + solr_core + '/update/json?commit=true'
+    print  solr_url
     req = urllib2.Request(url=solr_url, data="[" + ",".join(payload) + "]")
     req.add_header('Content-type', 'application/json')
     f = urllib2.urlopen(req)
@@ -50,7 +51,8 @@ def sendRequestsBulkToSolr(config, payload):
 @click.pass_context
 def cli(ctx, file, **opts):
     ctx.obj = opts
-    read(file, ctx.obj)
+    upload(file + '_train.txt', ctx.obj['solr_host'], ctx.obj['core'] + '_train', ctx.obj['bulk_size'])
+    upload(file + '_test.txt', ctx.obj['solr_host'], ctx.obj['core'] + '_test', ctx.obj['bulk_size'])
 
 if __name__ == '__main__':
     cli()

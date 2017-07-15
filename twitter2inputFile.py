@@ -21,38 +21,31 @@ def transform_json(line):
     return '"%s";"%s";"%s";"%s";""\n' % (user_id, tweet_id, timestamp, hash_tags)
 
 
-def read(infile, outfile):
-    train_file_name = outfile + "_train.txt"
-    test_file_name = outfile + "_test.txt"
-    train_test_file_name = outfile + ".txt"
-
+def transform(infile, outfile):
     with open(infile) as fin:
-        with open(train_file_name, 'w') as fout_train:
-            with open(test_file_name, 'w') as fout_test:
-                for line in fin:
-                    if len(line.strip()) > 0:
-                        line = transform_json(line)
-                        if random.randint(0, 4) == 0:
-                            fout_test.write(line)
-                        else:
-                            fout_train.write(line)
-
-    import fileinput
-    with open(train_test_file_name, 'w') as fout:
-        fin = fileinput.input([train_file_name, test_file_name])
-        for line in fin:
-            fout.write(line)
-        fin.close()
-
-
+        with open(outfile, 'w') as fout:
+            for line in fin:
+                if len(line.strip()) > 0:
+                    line = transform_json(line)
+                    fout.write(line)
 
 @click.command()
 @click.argument('infile', required=True)
 @click.argument('outfile', required=True)
 @click.pass_context
 def cli(ctx, infile, outfile, **opts):
-    read(infile, outfile)
+    train_file = infile + "_train.txt"
+    test_file = infile + "_test.txt"
+    train_out = outfile + "_train.txt"
+    test_out = outfile + "_test.txt"
 
+    transform(train_file, train_out)
+    transform(test_file, test_out)
+
+    with open(outfile + ".txt", 'w') as outfile:
+        for fname in [train_out, test_out]:
+            with open(fname) as infile:
+                outfile.write(infile.read())
 
 if __name__ == '__main__':
     cli()
