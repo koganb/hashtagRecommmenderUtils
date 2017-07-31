@@ -6,6 +6,7 @@ from urllib2 import *
 import click
 import dateutil.parser
 import warnings
+from datetime import datetime
 warnings.filterwarnings("ignore", category=UnicodeWarning)
 
 def transform_json(line):
@@ -13,8 +14,9 @@ def transform_json(line):
     solr_dist = dict()
     solr_dist['id'] = j['tweet_id']
     solr_dist['user_id'] = j['user_id']
-    solr_dist['text'] = j['tweet_text'].encode('ascii', errors='ignore')
-    solr_dist['hashtags'] = [x.encode('ascii', errors='ignore') for x in j['hashtags']]
+    solr_dist['text'] = j['tweet_text'].encode('UTF-8', errors='ignore')
+    #solr_dist['hashtags'] = [x.encode('ascii', errors='ignore') for x in j['hashtags']]
+    solr_dist['hashtags'] = [x.encode('UTF-8', errors='ignore') for x in j['hashtags']]
     solr_dist['timestamp'] = int(time.mktime(dateutil.parser.parse(
         str(j['date'])).timetuple()))
 
@@ -55,4 +57,8 @@ def cli(ctx, file, **opts):
     upload(file + '_test.txt', ctx.obj['solr_host'], ctx.obj['core'] + '_test', ctx.obj['bulk_size'])
 
 if __name__ == '__main__':
+    start_time = datetime.now()
+    print "twitter2solr has just started running"
     cli()
+    duration = (datetime.now() - start_time).seconds
+    print "\nThe whole process took us: " + str(duration / 60.0) + " minutes"
