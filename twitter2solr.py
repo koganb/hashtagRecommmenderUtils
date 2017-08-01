@@ -12,7 +12,7 @@ def transform_json(line):
     j = json.loads(line)
     solr_dist = dict()
     solr_dist['id'] = j['tweet_id']
-    solr_dist['user_id'] = j['user_id']
+    solr_dist['userid'] = j['user_id']
     solr_dist['text'] = j['tweet_text'].encode('ascii', errors='ignore')
     solr_dist['hashtags'] = [x.encode('ascii', errors='ignore') for x in j['hashtags']]
     solr_dist['timestamp'] = int(time.mktime(dateutil.parser.parse(
