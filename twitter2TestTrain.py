@@ -88,30 +88,46 @@ def split_to_train_test(timeline_file, network_file, results_location):
     timeline_test = results_location + "\\timeline_results_test.txt"
     java_data_train = results_location + "\\data_for_java_train.txt"
     java_data_test = results_location + "\\data_for_java_test.txt"
+    users_meta_data_file = results_location + "\\users_meta_data_table.txt"
     network_table = pd.read_csv(network_file)
     # pulling out the values of seed users and friends
     seed_users = set(network_table["seed_user"].unique())
     friend_users = set(network_table["friend"].unique())
-    # this object will contatin list of dictionaries of all the seed users, later will be ocnverted to a pandas df
+    # this object will contatin list of dictionaries of all the seed users, later will be converted to a pandas df
     seed_users_list = []
+    network_meta_data={}
     with open(timeline_file) as fin:
         with open(timeline_train, 'a') as t_train, open(java_data_train, 'a') as java_train:
             # going over each row in the input data file
             for line in fin:
-                j = json.loads(line)
+                try:
+                    j = json.loads(line)
+                except ValueError:
+                    print "Couldn't convert the line to a json, skiiping this one"
+                    continue
                 user_id = j['user_id']
+                friends_counter = j['friends_count']
+                followers_counter = j['followers_count']
+                network_meta_data[user_id] = [friends_counter, followers_counter]
+                # in case the user is a seed user-we'll just add him to the data of the seed user and later will handle
+                if user_id in seed_users:
+                    seed_users_list.append(j)
+                    continue
                 # in case the user not a seed one, but rather appears in the friends list
-                if user_id in friend_users:
+                elif user_id in friend_users:
                     # writing data to the timeline_train
                     t_train.write('\n')
                     json.dump(j, t_train)
                     # writing data to the java_data_train
                     java_json = transform_single_line(j=j)
                     java_train.write(java_json)
-                # in case the user is a seed user-we'll just add him to the data of the seed user and later will handle
-                elif user_id in seed_users:
-                    seed_users_list.append(j)
 
+    # handling the network meta-data object which contains information about frineds and followers
+    network_meta_data_df = pd.DataFrame.from_dict(network_meta_data, orient='index')
+    network_meta_data_df.reset_index(inplace=True)
+    network_meta_data_df.columns = ["UserID", "friends_cnt", "followers_cnt"]
+    with open(users_meta_data_file, 'a') as f:
+        network_meta_data_df.to_csv(f, header=False, index=False)
     # converting the seed users data from a list of dictionaries to a pandas data-frame
     seed_users_df = pd.DataFrame(seed_users_list)
     # splitting seed users to train/test (special handling here, because these are seed users)
